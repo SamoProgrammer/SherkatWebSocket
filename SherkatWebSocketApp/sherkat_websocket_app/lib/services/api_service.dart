@@ -6,7 +6,7 @@ class ApiService {
   void main() async {
     // Create a WebSocket channel
     final channel = await http.Client()
-        .get(Uri.parse('https://echo.websocket.org'))
+        .get(Uri.parse('ws://localhost:5034/notification'))
         .then((response) {
       return WebSocket.connect(response.headers['location']!);
     });
