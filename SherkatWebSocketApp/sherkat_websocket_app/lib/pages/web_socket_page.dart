@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebSocketPage extends StatefulWidget {
   final String url;
 
-  WebSocketPage({required this.url});
+  const WebSocketPage({super.key, required this.url});
 
   @override
   _WebSocketPageState createState() => _WebSocketPageState();
@@ -12,20 +13,39 @@ class WebSocketPage extends StatefulWidget {
 
 class _WebSocketPageState extends State<WebSocketPage> {
   late WebSocketChannel _channel;
-  final _controller = TextEditingController();
-  List<String> _messages = [];
+  List<String> _links = [];
+  late VideoPlayerController _controller;
+  late Future<void> _initializeVideoPlayerFuture;
 
   @override
   void initState() {
     super.initState();
     _connect();
+    _controller = VideoPlayerController.network(
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+    );
+
+    // Initialize the controller and store the Future for later use.
+    _initializeVideoPlayerFuture = _controller.initialize();
+
+    // Use the controller to loop the video.
+    _controller.setLooping(true);
   }
 
   void _connect() {
     _channel = WebSocketChannel.connect(Uri.parse(widget.url));
+    print("connected");
     _channel.stream.listen((message) {
       setState(() {
-        _messages.add(message);
+        _links.add(message);
+        _controller = VideoPlayerController.network(
+          _links.last,
+        );
+
+        _controller.initialize().then((_) {
+          setState(() {});
+          _controller.play();
+        });
       });
     });
   }
@@ -34,51 +54,59 @@ class _WebSocketPageState extends State<WebSocketPage> {
     _channel.sink.close();
   }
 
-  void _sendMessage(String message) {
-    _channel.sink.add(message);
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WebSocket Demo'),
+        title: const Text('Butterfly Video'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Enter a message',
-              ),
-            ),
-          ),
-          ButtonBar(
-            children: [
-              ElevatedButton(
-                onPressed: _disconnect,
-                child: const Text('Disconnect'),
-              ),
-              ElevatedButton(
-                onPressed: () => _sendMessage(_controller.text),
-                child: const Text('Send'),
-              ),
-            ],
-          ),
-        ],
+      // Use a FutureBuilder to display a loading spinner while waiting for the
+      // VideoPlayerController to finish initializing.
+      body: FutureBuilder(
+        future: _initializeVideoPlayerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            // If the VideoPlayerController has finished initialization, use
+            // the data it provides to limit the aspect ratio of the video.
+            return AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              // Use the VideoPlayer widget to display the video.
+              child: VideoPlayer(_controller),
+            );
+          } else {
+            // If the VideoPlayerController is still initializing, show a
+            // loading spinner.
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Wrap the play or pause in a call to `setState`. This ensures the
+          // correct icon is shown.
+          setState(() {
+            // If the video is playing, pause it.
+            if (_controller.value.isPlaying) {
+              _controller.pause();
+            } else {
+              // If the video is paused, play it.
+              _controller.play();
+            }
+          });
+        },
+        // Display the correct icon depending on the state of the player.
+        child: Icon(
+          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+        ),
       ),
     );
   }
