@@ -15,39 +15,70 @@ class _WebSocketPageState extends State<WebSocketPage> {
   late WebSocketChannel _channel;
   List<String> _links = [];
   late VideoPlayerController _controller;
-  late Future<void> _initializeVideoPlayerFuture;
+  int _currentVideoIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _connect();
-    _controller = VideoPlayerController.network(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
-    );
-
-    // Initialize the controller and store the Future for later use.
-    _initializeVideoPlayerFuture = _controller.initialize();
-
-    // Use the controller to loop the video.
-    _controller.setLooping(true);
-  }
-
-  void _connect() {
-    _channel = WebSocketChannel.connect(Uri.parse(widget.url));
-    print("connected");
-    _channel.stream.listen((message) {
-      setState(() {
-        _links.add(message);
-        _controller = VideoPlayerController.network(
-          _links.last,
-        );
-
-        _controller.initialize().then((_) {
-          setState(() {});
+    _controller = VideoPlayerController.network(_links[_currentVideoIndex])
+      ..initialize().then((_) {
+        setState(() {
           _controller.play();
         });
       });
+    _controller.addListener(_videoPlayerListener);
+    _channel.stream.listen((message) {
+      setState(() {
+        // Handle the received video link
+        addVideoLink(message);
+      });
     });
+  }
+
+  void addVideoLink(String videoLink) {
+    // Add the received video link to the videoList
+    _links.add(videoLink);
+
+    // If this is the first video link received, start playing it
+    if (_currentVideoIndex == 0) {
+      _controller = VideoPlayerController.network(_links[_currentVideoIndex])
+        ..initialize().then((_) {
+          setState(() {
+            _controller.play();
+          });
+        });
+      _controller.addListener(_videoPlayerListener);
+    }
+  }
+
+  void _videoPlayerListener() {
+    if (_controller.value.position >= _controller.value.duration) {
+      setState(() {
+        _currentVideoIndex++;
+        if (_currentVideoIndex < _links.length) {
+          _controller =
+              VideoPlayerController.network(_links[_currentVideoIndex])
+                ..initialize().then((_) {
+                  setState(() {
+                    // _initializeVideoPlayerFuture = _controller.initialize();
+                    _controller.play();
+                  });
+                });
+          _controller.addListener(_videoPlayerListener);
+        } else {
+          _currentVideoIndex = 0;
+          _controller =
+              VideoPlayerController.network(_links[_currentVideoIndex])
+                ..initialize().then((_) {
+                  setState(() {
+                    // _initializeVideoPlayerFuture = _controller.initialize();
+                    _controller.play();
+                  });
+                });
+          _controller.addListener(_videoPlayerListener);
+        }
+      });
+    }
   }
 
   void _disconnect() {
@@ -58,56 +89,55 @@ class _WebSocketPageState extends State<WebSocketPage> {
   void dispose() {
     // TODO: implement dispose
     _controller.dispose();
+    _channel.sink.close(); 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Butterfly Video'),
-      ),
-      // Use a FutureBuilder to display a loading spinner while waiting for the
-      // VideoPlayerController to finish initializing.
-      body: FutureBuilder(
-        future: _initializeVideoPlayerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the VideoPlayerController has finished initialization, use
-            // the data it provides to limit the aspect ratio of the video.
-            return AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              // Use the VideoPlayer widget to display the video.
-              child: VideoPlayer(_controller),
-            );
-          } else {
-            // If the VideoPlayerController is still initializing, show a
-            // loading spinner.
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+      body: ListView.builder(
+        itemCount: _links.length,
+        itemBuilder: (context, index) {
+          return _buildVideoPlayer(index);
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Wrap the play or pause in a call to `setState`. This ensures the
-          // correct icon is shown.
-          setState(() {
-            // If the video is playing, pause it.
-            if (_controller.value.isPlaying) {
-              _controller.pause();
-            } else {
-              // If the video is paused, play it.
-              _controller.play();
-            }
-          });
-        },
-        // Display the correct icon depending on the state of the player.
-        child: Icon(
-          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-        ),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     setState(() {
+      //       if (_controller.value.isPlaying) {
+      //         _controller.pause();
+      //       } else {
+      //         _controller.play();
+      //       }
+      //     });
+      //   },
+      //   child: Icon(
+      //     _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+      //   ),
+      // ),
     );
+  }
+
+  Widget _buildVideoPlayer(int index) {
+    if (index == _currentVideoIndex) {
+      // return FutureBuilder(
+      //   future: _initializeVideoPlayerFuture,
+      //   builder: (context, snapshot) {
+      //     if (snapshot.connectionState == ConnectionState.done) {
+      return AspectRatio(
+        aspectRatio: _controller.value.aspectRatio,
+        child: VideoPlayer(_controller),
+      );
+      //     } else {
+      //       return const Center(
+      //         child: CircularProgressIndicator(),
+      //       );
+      //     }
+      //   },
+      // );
+    } else {
+      return Container(); // Placeholder widget for non-active videos
+    }
   }
 }

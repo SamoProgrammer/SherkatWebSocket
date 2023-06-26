@@ -11,7 +11,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: WebSocketPage(url: 'ws://localhost:5034/notification',)
+      home: WebSocketPage(url: 'ws://localhost:5034/notification',),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
