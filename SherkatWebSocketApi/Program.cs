@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using SherkatWebSocketApi.Authentication;
 using SherkatWebSocketApi.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = "server=localhost;user=root;password=;database=mabna";
-var serverVersion = new MySqlServerVersion(new Version(7, 4, 29));
+var serverVersion = new MySqlServerVersion(new Version(8, 1, 17));
 
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseMySql(connectionString, serverVersion));
 
@@ -35,6 +36,7 @@ builder.Services.AddAuthentication(options =>
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
         };
     });
+// builder.Services.AddTransient<IJWTManagerRepository, JWTManagerRepository>();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
