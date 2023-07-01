@@ -6,14 +6,14 @@ using Microsoft.Net.Http.Headers;
 // using Microsoft.Net.Http.Headers;
 
 namespace SherkatWebSocketApi.Controllers;
-
+[Route("api/[controller]")]
 [ApiController]
 public class VideosController : ControllerBase
 {
     private static readonly List<WebSocket> connectedClients = new List<WebSocket>();
 
-    [HttpGet("notification")]
-    public async Task Notification()
+    [HttpGet("Ws")]
+    public async Task WebSocket()
     {
         var context = ControllerContext.HttpContext;
         if (context.WebSockets.IsWebSocketRequest)
@@ -33,7 +33,7 @@ public class VideosController : ControllerBase
         }
     }
 
-    [HttpPost("/upload")]
+    [HttpPost("Upload")]
     public async Task<IActionResult> Upload([FromForm]Video video)
     {
         // save the file
