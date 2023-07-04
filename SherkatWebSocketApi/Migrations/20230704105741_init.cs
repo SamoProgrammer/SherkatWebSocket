@@ -42,35 +42,57 @@ namespace SherkatWebSocketApi.Migrations
                     Password = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Role = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    DeviceId = table.Column<string>(type: "varchar(255)", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "DeviceUser",
+                columns: table => new
+                {
+                    AdminsId = table.Column<int>(type: "int", nullable: false),
+                    DevicesDeviceId = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeviceUser", x => new { x.AdminsId, x.DevicesDeviceId });
                     table.ForeignKey(
-                        name: "FK_Users_Devices_DeviceId",
-                        column: x => x.DeviceId,
+                        name: "FK_DeviceUser_Devices_DevicesDeviceId",
+                        column: x => x.DevicesDeviceId,
                         principalTable: "Devices",
-                        principalColumn: "DeviceId");
+                        principalColumn: "DeviceId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DeviceUser_Users_AdminsId",
+                        column: x => x.AdminsId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_DeviceId",
-                table: "Users",
-                column: "DeviceId");
+                name: "IX_DeviceUser_DevicesDeviceId",
+                table: "DeviceUser",
+                column: "DevicesDeviceId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "DeviceUser");
 
             migrationBuilder.DropTable(
                 name: "Devices");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

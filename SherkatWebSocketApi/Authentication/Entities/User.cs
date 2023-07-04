@@ -1,3 +1,5 @@
+using SherkatWebSocketApi.Entities;
+
 namespace SherkatWebSocketApi.Authentication.Entities;
 
 public class User
@@ -7,4 +9,5 @@ public class User
     public string PhoneNumber { get; set; }
     public string Password { get; set; }
     public string Role { get; set; }
+    public ICollection<Device> Devices { get; set; }
 }

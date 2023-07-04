@@ -18,14 +18,26 @@ namespace SherkatWebSocketApi.Migrations
                 .HasAnnotation("ProductVersion", "7.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            modelBuilder.Entity("DeviceUser", b =>
+                {
+                    b.Property<int>("AdminsId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DevicesDeviceId")
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("AdminsId", "DevicesDeviceId");
+
+                    b.HasIndex("DevicesDeviceId");
+
+                    b.ToTable("DeviceUser");
+                });
+
             modelBuilder.Entity("SherkatWebSocketApi.Authentication.Entities.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -45,8 +57,6 @@ namespace SherkatWebSocketApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeviceId");
-
                     b.ToTable("Users");
                 });
 
@@ -64,16 +74,19 @@ namespace SherkatWebSocketApi.Migrations
                     b.ToTable("Devices");
                 });
 
-            modelBuilder.Entity("SherkatWebSocketApi.Authentication.Entities.User", b =>
+            modelBuilder.Entity("DeviceUser", b =>
                 {
-                    b.HasOne("SherkatWebSocketApi.Entities.Device", null)
-                        .WithMany("Admins")
-                        .HasForeignKey("DeviceId");
-                });
+                    b.HasOne("SherkatWebSocketApi.Authentication.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AdminsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-            modelBuilder.Entity("SherkatWebSocketApi.Entities.Device", b =>
-                {
-                    b.Navigation("Admins");
+                    b.HasOne("SherkatWebSocketApi.Entities.Device", null)
+                        .WithMany()
+                        .HasForeignKey("DevicesDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
