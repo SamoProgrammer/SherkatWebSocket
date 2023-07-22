@@ -103,27 +103,10 @@ public class UsersController : ControllerBase
             return NotFound();
         }
         User user = await _context.Users.FirstAsync(x => x.Username == username);
-        return Ok(Authenticate(user));
+        var jwtTokenService = new JWTTokenService(_context, _configuration);
+        return Ok(jwtTokenService.Authenticate(user));
 
 
     }
-    public JWTToken Authenticate(User user)
-    {
-        // Else we generate JSON Web Token
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"]);
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role),
-            }),
-            Expires = DateTime.UtcNow.AddMinutes(30),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey),
-                SecurityAlgorithms.HmacSha256Signature)
-        };
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return new JWTToken { Token = tokenHandler.WriteToken(token), Expires = token.ValidTo };
-    }
+
 }
